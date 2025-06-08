@@ -39,30 +39,6 @@
       font-weight: 400;
       color: #555;
     }
-    .char-count {
-      position: absolute;
-      right: 0;
-      top: 0;
-      font-size: 11px;
-      color: #aaa;
-    }
-    input[type="text"]#algorithm-name {
-      width: 100%;
-      max-width: 300px;
-      padding: 0.5rem 0;
-      font-size: 24px;
-      border: none;
-      border-bottom: 1px solid #ccc;
-      border-radius: 0;
-      background: #fff;
-      outline: none;
-    }
-    input[type="text"]#algorithm-name::placeholder {
-      color: #aaa;
-    }
-    input[type="text"]#algorithm-name:focus {
-      border-bottom-color: #999;
-    }
     .theme-input {
       position: relative;
       border-radius: 32px;
@@ -179,11 +155,7 @@
       <div class="left-panel">
         <div id="settings-toggle" title="Open Settings">⚙️</div>
         <div class="field-group">
-          <label for="algorithm-name">Algorithm Name <span class="char-count" id="char-count">0/35</span></label>
-          <input type="text" id="algorithm-name" maxlength="35" placeholder="Untitled Algorithm">
-        </div>
-        <div class="field-group">
-          <label for="widget-theme">Widget Theme</label>
+          <label for="widget-theme">Algorithm Theme</label>
           <div class="theme-input">
             <input type="text" id="widget-theme" placeholder="Describe your theme...">
           </div>
@@ -220,12 +192,6 @@
     const settingsModal = document.getElementById('settings-modal');
     settingsToggle.addEventListener('click', () => {
       settingsModal.classList.toggle('show');
-    });
-
-    const algorithmInput = document.getElementById('algorithm-name');
-    const charCount = document.getElementById('char-count');
-    algorithmInput.addEventListener('input', () => {
-      charCount.textContent = `${algorithmInput.value.length}/35`;
     });
 
     const themeInput = document.getElementById('widget-theme');
