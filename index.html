@@ -28,29 +28,33 @@
       flex: 1;
       position: relative;
     }
-    .field-group {
-      margin-bottom: 2rem;
-      position: relative;
-    }
-    label {
-      display: block;
-      margin-bottom: 0.25rem;
-      font-size: 11px;
-      font-weight: 400;
-      color: #555;
+    .theme-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
     }
     .theme-input {
       position: relative;
       border-radius: 32px;
       padding: 2px;
       background: linear-gradient(90deg, #e0c3fc, #8ec5fc);
+      background-size: 200% 100%;
+      animation: none;
       transition: background 0.4s ease;
+    }
+    .theme-input.loading {
+      animation: gradientMove 2s linear infinite;
+    }
+    @keyframes gradientMove {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
     }
     .theme-input input {
       background: white;
       border-radius: 32px;
       padding: 0.75rem 1.5rem;
-      width: 100%;
+      width: 630px;
       font-size: 1rem;
       border: none;
       outline: none;
@@ -154,17 +158,17 @@
     <div class="top-panel">
       <div class="left-panel">
         <div id="settings-toggle" title="Open Settings">⚙️</div>
-        <div class="field-group">
-          <label for="widget-theme">Algorithm Theme</label>
-          <div class="theme-input">
-            <input type="text" id="widget-theme" placeholder="Describe your theme...">
+        <div class="theme-bar">
+          <div class="theme-input" id="theme-input-wrapper">
+            <input id="widget-theme" type="text" placeholder="Describe your collection" maxlength="35" />
           </div>
-        </div>
-        <div class="button-bar">
-          <button class="save-button" id="save-algo">Save Algorithm</button>
-          <button class="cancel-button">Cancel</button>
+          <button class="save-button" id="preview-button">Preview</button>
         </div>
       </div>
+    </div>
+    <div class="button-bar">
+      <button class="save-button" id="save-algo">Save Algorithm</button>
+      <button class="cancel-button">Cancel</button>
     </div>
     <div class="preview-section" id="product-preview"></div>
   </div>
@@ -188,20 +192,14 @@
   </div>
 
   <script>
-    const settingsToggle = document.getElementById('settings-toggle');
-    const settingsModal = document.getElementById('settings-modal');
-    settingsToggle.addEventListener('click', () => {
-      settingsModal.classList.toggle('show');
-    });
-
-    const themeInput = document.getElementById('widget-theme');
-    const previewContainer = document.getElementById('product-preview');
-
-    themeInput.addEventListener('change', fetchRecommendations);
-
-    async function fetchRecommendations() {
+    function fetchRecommendations() {
+      const themeInput = document.getElementById('widget-theme');
+      const themeWrapper = document.getElementById('theme-input-wrapper');
+      const previewContainer = document.getElementById('product-preview');
       const theme = themeInput.value.trim();
       if (!theme) return;
+
+      themeWrapper.classList.add('loading');
 
       const prompt = `10 product suggestions for: ${theme}`;
       const payload = {
@@ -216,17 +214,19 @@
       const sectionId = document.getElementById('section-id').value;
 
       previewContainer.innerHTML = '';
-      const grid = document.createElement('div');
-      grid.className = 'products-grid';
-      previewContainer.appendChild(grid);
+      const loader = document.createElement('div');
+      loader.textContent = 'Loading...';
+      loader.style.cssText = 'text-align: center; font-size: 1.2rem; margin-top: 2rem;';
+      previewContainer.appendChild(loader);
 
-      try {
-        const res = await fetch(`https://muse.dynamicyield.com/v1/muse/completion?section_id=${encodeURIComponent(sectionId)}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
+      fetch(`https://muse.dynamicyield.com/v1/muse/completion?section_id=${encodeURIComponent(sectionId)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(data => {
+        themeWrapper.classList.remove('loading');
         const recommendWidgets = data.chat?.recommend_widgets;
         if (!Array.isArray(recommendWidgets) || !recommendWidgets.length) {
           previewContainer.innerHTML = '<div class="error-message">No recommendations available.</div>';
@@ -242,6 +242,13 @@
           const itemsForSlot = recommendWidgets.map(w => w.slots?.[i]?.item).filter(Boolean);
           allItems.push(...itemsForSlot);
         }
+
+        loader.remove();
+
+        const grid = document.createElement('div');
+        grid.className = 'products-grid';
+        previewContainer.appendChild(grid);
+
         allItems.forEach(item => {
           const a = document.createElement('a');
           a.className = 'product-card';
@@ -254,11 +261,22 @@
           `;
           grid.appendChild(a);
         });
-      } catch (err) {
+      })
+      .catch(err => {
         console.error(err);
+        themeWrapper.classList.remove('loading');
         previewContainer.innerHTML = '<div class="error-message">Error loading products.</div>';
-      }
+      });
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('settings-toggle').addEventListener('click', () => {
+        document.getElementById('settings-modal').classList.toggle('show');
+      });
+
+      document.getElementById('widget-theme').addEventListener('change', fetchRecommendations);
+      document.getElementById('preview-button').addEventListener('click', fetchRecommendations);
+    });
   </script>
 </body>
 </html>
